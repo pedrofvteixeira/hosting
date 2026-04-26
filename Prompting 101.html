@@ -1,0 +1,2768 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompting 101</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: oklch(97% 0.008 70);
+    --surface: oklch(100% 0 0);
+    --border: oklch(90% 0.008 70);
+    --text: oklch(20% 0.01 250);
+    --text-muted: oklch(52% 0.01 250);
+    --accent: oklch(45% 0.18 250);
+    --accent-light: oklch(95% 0.06 250);
+    --accent-mid: oklch(88% 0.10 250);
+    --amber: oklch(72% 0.16 75);
+    --amber-light: oklch(96% 0.05 75);
+    --green: oklch(60% 0.16 145);
+    --green-light: oklch(95% 0.06 145);
+    --red: oklch(55% 0.18 25);
+    --red-light: oklch(96% 0.05 25);
+    --sidebar-w: 280px;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  #root { height: 100%; display: flex; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+  }
+
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo h1 {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .sidebar-logo p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-weight: 500;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 16px 0;
+  }
+
+  .nav-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding: 0 24px 8px;
+    margin-top: 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .nav-item:hover { background: var(--bg); }
+
+  .nav-item.active {
+    background: var(--accent-light);
+  }
+
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .nav-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    background: var(--border);
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+
+  .nav-item.active .nav-dot {
+    background: var(--accent);
+    color: white;
+  }
+
+  .nav-item.done .nav-dot {
+    background: var(--green);
+    color: white;
+  }
+
+  .nav-item.exam .nav-dot {
+    background: var(--amber);
+    color: white;
+  }
+
+  .nav-item.exam.active .nav-dot {
+    background: var(--amber);
+  }
+
+  .nav-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    text-wrap: pretty;
+    line-height: 1.3;
+  }
+
+  .nav-item.active .nav-title { color: var(--accent); }
+
+  .nav-check {
+    margin-left: auto;
+    color: var(--green);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .progress-bar-wrap {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .progress-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.5s ease;
+  }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    height: 100vh;
+  }
+
+  .chapter-view {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 48px 80px;
+  }
+
+  .chapter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    margin-bottom: 16px;
+  }
+
+  .chapter-title {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--text);
+    margin-bottom: 8px;
+    text-wrap: pretty;
+    line-height: 1.15;
+  }
+
+  .chapter-subtitle {
+    font-size: 17px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 40px;
+    text-wrap: pretty;
+  }
+
+  /* CONTENT BLOCKS */
+  .block { margin-bottom: 28px; }
+
+  .block p {
+    font-size: 16px;
+    color: var(--text);
+    text-wrap: pretty;
+    line-height: 1.75;
+  }
+
+  .block h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+
+  .block ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .block li {
+    font-size: 16px;
+    line-height: 1.75;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+
+  .block li strong {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .example-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .example-header {
+    padding: 10px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .example-bad .example-header { background: var(--red-light); color: var(--red); }
+  .example-good .example-header { background: var(--green-light); color: var(--green); }
+
+  .example-body {
+    padding: 16px;
+    font-size: 14px;
+    font-family: 'Plus Jakarta Sans', monospace;
+    line-height: 1.65;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  .tip-card {
+    background: var(--amber-light);
+    border: 1px solid oklch(88% 0.10 75);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .tip-icon {
+    font-size: 20px;
+    line-height: 1;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
+  .tip-card p {
+    font-size: 14px;
+    color: oklch(35% 0.08 75);
+    line-height: 1.65;
+  }
+
+  .tip-card strong {
+    font-weight: 700;
+    display: block;
+    margin-bottom: 3px;
+    color: oklch(28% 0.10 75);
+  }
+
+  .info-card {
+    background: var(--accent-light);
+    border: 1px solid var(--accent-mid);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .info-card p {
+    font-size: 14px;
+    color: oklch(30% 0.10 250);
+    line-height: 1.65;
+  }
+
+  .info-card strong {
+    font-weight: 700;
+    display: block;
+    margin-bottom: 3px;
+    color: oklch(25% 0.12 250);
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 40px 0;
+  }
+
+  /* QUIZ */
+  .quiz-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-top: 16px;
+  }
+
+  .quiz-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .quiz-badge {
+    background: var(--accent);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 4px 10px;
+    border-radius: 99px;
+  }
+
+  .quiz-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .quiz-progress-text {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .question-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .option-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .option-btn.selected:not(.answered) {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .option-btn.correct {
+    border-color: var(--green);
+    background: var(--green-light);
+  }
+
+  .option-btn.wrong {
+    border-color: var(--red);
+    background: var(--red-light);
+  }
+
+  .option-btn:disabled { cursor: default; }
+
+  .option-letter {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+
+  .option-btn.selected:not(.answered) .option-letter,
+  .option-btn:hover:not(:disabled) .option-letter {
+    background: var(--accent);
+    color: white;
+  }
+
+  .option-btn.correct .option-letter {
+    background: var(--green);
+    color: white;
+  }
+
+  .option-btn.wrong .option-letter {
+    background: var(--red);
+    color: white;
+  }
+
+  .option-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .feedback-box {
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .feedback-box.correct {
+    background: var(--green-light);
+    border: 1px solid oklch(80% 0.12 145);
+    color: oklch(28% 0.12 145);
+  }
+
+  .feedback-box.wrong {
+    background: var(--red-light);
+    border: 1px solid oklch(82% 0.10 25);
+    color: oklch(30% 0.12 25);
+  }
+
+  .feedback-box strong { font-weight: 700; }
+
+  .quiz-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .btn {
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover { background: oklch(40% 0.18 250); }
+  .btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+  }
+
+  .btn-secondary:hover { background: var(--bg); }
+
+  /* QUIZ RESULT */
+  .quiz-result {
+    text-align: center;
+    padding: 16px 0;
+  }
+
+  .result-score-big {
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .result-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  .result-stars {
+    font-size: 28px;
+    margin-bottom: 16px;
+    letter-spacing: 4px;
+  }
+
+  .result-message {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+    max-width: 340px;
+    margin-left: auto;
+    margin-right: auto;
+    text-wrap: pretty;
+  }
+
+  .next-chapter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+
+  .next-chapter-btn:hover { background: oklch(40% 0.18 250); }
+
+  /* HOME */
+  .home-view {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 64px 48px 80px;
+  }
+
+  .home-eyebrow {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .home-title {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1.08;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+
+  .home-title span { color: var(--accent); }
+
+  .home-desc {
+    font-size: 18px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 40px;
+    text-wrap: pretty;
+  }
+
+  .chapters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .chapter-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .chapter-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px oklch(45% 0.18 250 / 0.08);
+  }
+
+  .chapter-card-num {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .chapter-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .chapter-card-icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .start-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent);
+    color: white;
+    padding: 16px 32px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    box-shadow: 0 4px 20px oklch(45% 0.18 250 / 0.25);
+  }
+
+  .start-btn:hover {
+    background: oklch(40% 0.18 250);
+    box-shadow: 0 6px 24px oklch(45% 0.18 250 / 0.35);
+  }
+
+  /* EXAM */
+  .exam-view {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 48px 80px;
+  }
+
+  .exam-header-section {
+    background: linear-gradient(135deg, var(--accent) 0%, oklch(52% 0.20 270) 100%);
+    border-radius: 16px;
+    padding: 32px;
+    color: white;
+    margin-bottom: 32px;
+  }
+
+  .exam-header-section h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .exam-header-section p {
+    opacity: 0.85;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .exam-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  .exam-stat {
+    background: white/20;
+    background: oklch(100% 0 0 / 0.15);
+    border-radius: 8px;
+    padding: 10px 16px;
+    text-align: center;
+  }
+
+  .exam-stat-num {
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .exam-stat-label {
+    font-size: 11px;
+    opacity: 0.8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* EXAM RESULT */
+  .exam-result-view {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 64px 48px;
+    text-align: center;
+  }
+
+  .exam-score-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    border: 3px solid var(--accent);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+
+  .exam-score-num {
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -2px;
+    line-height: 1;
+  }
+
+  .exam-score-denom {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .exam-result-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+
+  .exam-result-desc {
+    font-size: 16px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 32px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    text-wrap: pretty;
+  }
+
+  .chapter-breakdown {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 32px;
+    text-align: left;
+  }
+
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+
+  .breakdown-row:last-child { border-bottom: none; }
+
+  .breakdown-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .breakdown-bar-wrap {
+    width: 100px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .breakdown-bar {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.8s ease;
+  }
+
+  .breakdown-score {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    width: 32px;
+    text-align: right;
+  }
+
+  /* ANIM */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-up {
+    animation: fadeUp 0.35s ease both;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .pop-in { animation: popIn 0.25s ease both; }
+
+  /* PROFESSOR CARD */
+  .professor-card {
+    background: oklch(96% 0.06 295);
+    border: 1.5px solid oklch(82% 0.12 295);
+    border-radius: 14px;
+    padding: 20px 20px 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .professor-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: oklch(55% 0.20 295);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px oklch(55% 0.20 295 / 0.25);
+  }
+
+  .professor-content { flex: 1; }
+
+  .professor-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: oklch(42% 0.16 295);
+    margin-bottom: 6px;
+  }
+
+  .professor-body {
+    font-size: 14px;
+    color: oklch(28% 0.10 295);
+    line-height: 1.7;
+    text-wrap: pretty;
+  }
+
+  .professor-body em {
+    font-style: italic;
+    color: oklch(38% 0.14 295);
+  }
+
+  /* RAQUEL GREETING */
+  .raquel-greeting {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: oklch(96% 0.06 15);
+    border: 1px solid oklch(86% 0.10 15);
+    border-radius: 99px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: oklch(40% 0.16 15);
+    margin-bottom: 20px;
+  }
+
+  /* FINAL PROJECT */
+  .project-view {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 48px 80px;
+  }
+
+  .project-header {
+    background: linear-gradient(135deg, oklch(38% 0.18 295) 0%, oklch(50% 0.22 260) 100%);
+    border-radius: 16px;
+    padding: 36px;
+    color: white;
+    margin-bottom: 36px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .project-header::after {
+    content: '🤓';
+    position: absolute;
+    right: 32px;
+    bottom: -8px;
+    font-size: 80px;
+    opacity: 0.18;
+  }
+
+  .project-header-tag {
+    display: inline-block;
+    background: oklch(100% 0 0 / 0.18);
+    border-radius: 99px;
+    padding: 4px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 14px;
+  }
+
+  .project-header h2 {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+    line-height: 1.15;
+  }
+
+  .project-header p {
+    font-size: 15px;
+    opacity: 0.88;
+    font-weight: 500;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .project-step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    align-items: flex-start;
+  }
+
+  .project-step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .project-step-body h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .project-step-body p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  .prompt-builder {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 24px 0;
+  }
+
+  .prompt-builder-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prompt-builder-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .prompt-builder textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 20px;
+    font-family: 'Plus Jakarta Sans', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--surface);
+    border: none;
+    outline: none;
+    resize: vertical;
+  }
+
+  .prompt-builder textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+  }
+
+  .prompt-builder-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .prompt-char-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.5;
+    cursor: pointer;
+  }
+
+  .checklist-item input[type=checkbox] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+  }
+
+  .checklist-item span { flex: 1; }
+
+  .congrats-box {
+    background: linear-gradient(135deg, var(--green-light) 0%, oklch(96% 0.05 145) 100%);
+    border: 1.5px solid oklch(78% 0.14 145);
+    border-radius: 14px;
+    padding: 28px;
+    text-align: center;
+    margin-top: 32px;
+  }
+
+  .congrats-box h3 {
+    font-size: 20px;
+    font-weight: 800;
+    color: oklch(28% 0.12 145);
+    margin-bottom: 8px;
+  }
+
+  .congrats-box p {
+    font-size: 14px;
+    color: oklch(38% 0.10 145);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
+<template id="__bundler_thumbnail" data-bg-color="#f7f4f0">
+  <svg viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg">
+    <!-- Sidebar -->
+    <rect x="0" y="0" width="100" height="280" fill="#ffffff" rx="0"/>
+    <rect x="12" y="20" width="60" height="10" rx="5" fill="#3b5fc0"/>
+    <rect x="12" y="36" width="40" height="5" rx="2" fill="#c8ccd8"/>
+    <rect x="12" y="58" width="76" height="8" rx="4" fill="#e8eaf2"/>
+    <rect x="12" y="72" width="76" height="8" rx="4" fill="#3b5fc0" opacity="0.15"/>
+    <rect x="0" y="72" width="3" height="8" rx="1" fill="#3b5fc0"/>
+    <rect x="12" y="86" width="76" height="8" rx="4" fill="#e8eaf2"/>
+    <rect x="12" y="100" width="76" height="8" rx="4" fill="#e8eaf2"/>
+    <rect x="12" y="114" width="76" height="8" rx="4" fill="#e8eaf2"/>
+    <!-- Main area -->
+    <rect x="108" y="20" width="120" height="14" rx="6" fill="#3b5fc0" opacity="0.18"/>
+    <rect x="108" y="42" width="260" height="18" rx="6" fill="#1a2a5e" opacity="0.85"/>
+    <rect x="108" y="66" width="200" height="10" rx="4" fill="#8891b0" opacity="0.7"/>
+    <!-- Content blocks -->
+    <rect x="108" y="90" width="270" height="40" rx="8" fill="#eef1fa"/>
+    <rect x="116" y="98" width="180" height="7" rx="3" fill="#3b5fc0" opacity="0.4"/>
+    <rect x="116" y="111" width="240" height="7" rx="3" fill="#8891b0" opacity="0.5"/>
+    <!-- Professor card -->
+    <rect x="108" y="140" width="270" height="50" rx="10" fill="#f0ebfc" stroke="#c8b8f0" stroke-width="1"/>
+    <circle cx="126" cy="165" r="12" fill="#7c3aed"/>
+    <text x="123" y="170" font-size="14" text-anchor="middle">🤓</text>
+    <rect x="145" y="153" width="110" height="6" rx="3" fill="#7c3aed" opacity="0.4"/>
+    <rect x="145" y="165" width="220" height="5" rx="2" fill="#6b21a8" opacity="0.25"/>
+    <rect x="145" y="176" width="190" height="5" rx="2" fill="#6b21a8" opacity="0.2"/>
+    <!-- Quiz card -->
+    <rect x="108" y="202" width="270" height="55" rx="10" fill="#ffffff" stroke="#dde0ec" stroke-width="1"/>
+    <rect x="118" y="212" width="50" height="8" rx="4" fill="#3b5fc0"/>
+    <rect x="118" y="226" width="200" height="6" rx="3" fill="#1a2a5e" opacity="0.6"/>
+    <rect x="118" y="238" width="240" height="5" rx="2" fill="#8891b0" opacity="0.4"/>
+    <rect x="300" y="246" width="60" height="8" rx="4" fill="#3b5fc0" opacity="0.85"/>
+  </svg>
+</template>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useCallback, useEffect } = React;
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+
+const CHAPTERS = [
+  {
+    id: 1,
+    greeting: "Olá Raquel! Bem-vinda ao teu primeiro capítulo 👋",
+    icon: "🧠",
+    title: "O que é um LLM?",
+    subtitle: "Percebe como os modelos de linguagem funcionam, antes de os usares.",
+    content: [
+      {
+        type: "text",
+        body: "Um **Large Language Model (LLM)** é um sistema de inteligência artificial treinado em enormes quantidades de texto — livros, artigos, código, páginas web, e muito mais. Com esse treino, o modelo aprende padrões estatísticos da linguagem: quais palavras tendem a seguir outras, como as frases se estruturam, e como os conceitos se relacionam. É exatamente a ferramenta certa para começares a explorar, Raquel."
+      },
+      {
+        type: "info",
+        title: "Como gera texto?",
+        body: "Um LLM não 'sabe' factos como uma base de dados. Em vez disso, prevê qual é o próximo token (palavra ou parte de palavra) mais provável, com base em tudo o que foi escrito antes. É um gerador estatístico de texto extremamente sofisticado."
+      },
+      {
+        type: "text",
+        body: "O que o torna poderoso é a escala — tanto do treino como do modelo em si. Com biliões de parâmetros, um LLM consegue raciocinar, resumir, traduzir, programar, e muito mais. Mas continua a ser uma previsão estatística, não uma mente."
+      },
+      {
+        type: "heading",
+        body: "O que um LLM pode e não pode fazer"
+      },
+      {
+        type: "list",
+        items: [
+          "**Pode:** Resumir textos, responder perguntas, escrever conteúdo, traduzir, programar, raciocinar em passos",
+          "**Pode:** Adaptar o seu tom, estilo e formato conforme as suas instruções — e é aqui, Raquel, que o prompting faz toda a diferença",
+          "**Não pode:** Aceder à internet (a menos que tenha ferramentas), recordar conversas anteriores, garantir veracidade absoluta",
+          "**Não pode:** 'Compreender' no sentido humano — interpreta padrões de linguagem"
+        ]
+      },
+      {
+        type: "tip",
+        title: "O que isto significa para o prompting",
+        body: "Como o modelo gera texto com base no contexto fornecido, a qualidade e a clareza do que escreves no prompt influenciam diretamente a qualidade da resposta. Mais contexto relevante = melhor resultado."
+      },
+      {
+        type: "professor",
+        label: "explica com um exemplo",
+        body: "Imagina que o Professor Pedro está à conversa contigo. Só que em vez de ter passado anos a estudar e a decorar assuntos na escola, ele dedicou-se a estudar _qual a palavra mais provável a seguir a outra_. Assim sendo, o Professor Pedro fala muito e parece saber muito... mas na verdade só está a mandar **bitaites**. Às vezes acerta em cheio. Outras vezes inventa com toda a confiança — e isso chama-se _alucinação_. Por isso, verifica sempre os factos importantes!"
+      }
+    ],
+    quiz: [
+      {
+        q: "O que faz um LLM ao processar a sua entrada de texto?",
+        opts: [
+          "Consulta uma base de dados de factos verificados",
+          "Prevê qual o próximo token mais provável com base no contexto",
+          "Liga-se à internet para procurar a resposta",
+          "Copia respostas de textos do seu treino"
+        ],
+        correct: 1,
+        explanation: "Um LLM gera texto prevendo o próximo token com base em padrões aprendidos durante o treino — não consulta bases de dados nem a internet."
+      },
+      {
+        q: "Por que razão a qualidade do prompt afeta a qualidade da resposta?",
+        opts: [
+          "Porque o modelo é preguiçoso quando recebe prompts vagos",
+          "Porque o modelo gera texto com base no contexto fornecido — mais contexto útil leva a melhores previsões",
+          "Porque prompts longos dão mais tempo ao modelo para pensar",
+          "Porque o modelo penaliza internamente prompts mal escritos"
+        ],
+        correct: 1,
+        explanation: "O modelo gera respostas com base no contexto. Um bom prompt fornece o contexto certo para que as previsões do modelo sejam mais úteis e relevantes."
+      },
+      {
+        q: "Qual destes NÃO é uma limitação típica de um LLM?",
+        opts: [
+          "Pode produzir informações incorretas com confiança",
+          "Não acede à internet por padrão",
+          "Não consegue resumir textos longos",
+          "Não recorda conversas anteriores por padrão"
+        ],
+        correct: 2,
+        explanation: "Resumir textos é precisamente uma das capacidades em que os LLMs se destacam. As outras opções são limitações reais."
+      }
+    ]
+  },
+  {
+    id: 2,
+    greeting: "Ótima questão, Raquel! Vamos desvendar os tokens 🔤",
+    icon: "🔤",
+    title: "O que é um Token?",
+    subtitle: "A unidade básica que os LLMs usam para ler e gerar texto.",
+    content: [
+      {
+        type: "text",
+        body: "Antes de escreveres um bom prompt, Raquel, é útil perceber como o modelo 'vê' o texto. Os LLMs não lêem palavras — lêem **tokens**. Um token é um pedaço de texto: pode ser uma palavra inteira, parte de uma palavra, ou até um sinal de pontuação."
+      },
+      {
+        type: "heading",
+        body: "Como funciona a tokenização?"
+      },
+      {
+        type: "list",
+        items: [
+          "Palavras curtas e comuns → geralmente **1 token** cada. Ex: 'casa', 'amor', 'sim'",
+          "Palavras longas ou raras → podem ser **2 ou mais tokens**. Ex: 'tokenização' → ['token', 'iza', 'ção']",
+          "Espaços e pontuação → também **contam como tokens**",
+          "Números → cada dígito pode ser um token separado. Ex: '2024' → ['20', '24']"
+        ]
+      },
+      {
+        type: "example",
+        label: "Exemplo de tokenização",
+        text: "Frase: \"O gato subiu ao telhado.\"\nTokens: [\"O\", \" gato\", \" sub\", \"iu\", \" ao\", \" tel\", \"hado\", \".\"]\nTotal: 8 tokens"
+      },
+      {
+        type: "heading",
+        body: "Porque é que os tokens importam?"
+      },
+      {
+        type: "list",
+        items: [
+          "**Contexto limitado:** cada modelo tem um limite de tokens que consegue processar de uma vez (ex: 128 000 tokens). Prompts muito longos podem ultrapassar esse limite.",
+          "**Custo:** muitas APIs de LLM cobram por token — tanto os tokens do prompt como os da resposta.",
+          "**Eficiência:** prompts mais concisos e bem escritos usam menos tokens e produzem respostas mais focadas."
+        ]
+      },
+      {
+        type: "info",
+        title: "Regra prática",
+        body: "Como estimativa rápida: 1 token ≈ 0,75 palavras em inglês. Em português, as palavras tendem a ser ligeiramente mais longas, por isso conta com cerca de 1 token por cada 0,65 palavras."
+      },
+      {
+        type: "professor",
+        label: "explica com um exemplo",
+        body: "Imagina que o Professor Pedro quer enviar uma carta, mas o envelope só cabe 100 pedaços de papel. Cada palavra que escreve é cortada em pedacinhos (tokens) antes de ser metida no envelope. Palavras simples como 'gato' cabem num pedaço. Palavras grandes como 'incompreensível' precisam de três. Se a carta for demasiado comprida, não cabe no envelope e o modelo 'esquece' o início. **Por isso, ser conciso no prompt é sempre uma boa ideia** — poupa espaço no envelope e o modelo lê tudo."
+      }
+    ],
+    quiz: [
+      {
+        q: "O que é um token no contexto dos LLMs?",
+        opts: [
+          "Uma palavra completa — sempre e sem excepção",
+          "Um pedaço de texto: pode ser uma palavra, parte de uma palavra, ou pontuação",
+          "Uma frase completa processada de uma vez",
+          "Um símbolo especial que separa parágrafos"
+        ],
+        correct: 1,
+        explanation: "Um token é a unidade básica de processamento — pode ser uma palavra inteira, uma sílaba, um sufixo, ou pontuação. As palavras são divididas conforme o vocabulário do modelo."
+      },
+      {
+        q: "Porque é importante conhecer o conceito de tokens ao escrever prompts?",
+        opts: [
+          "Para escrever prompts em maiúsculas e chamar mais atenção ao modelo",
+          "Porque cada token tem um significado especial que o modelo interpreta diferente",
+          "Porque os modelos têm um limite de tokens e prompts muito longos podem ser truncados",
+          "Porque tokens mais curtos geram sempre respostas melhores"
+        ],
+        correct: 2,
+        explanation: "Os modelos têm uma janela de contexto limitada (medida em tokens). Se o prompt for demasiado longo, o modelo pode não processar toda a informação — o que afeta a qualidade da resposta."
+      },
+      {
+        q: "Qual destas afirmações sobre tokens é VERDADEIRA?",
+        opts: [
+          "Espaços e pontuação não contam como tokens",
+          "Uma palavra longa pode ser dividida em vários tokens",
+          "Todos os idiomas usam exatamente o mesmo número de tokens por palavra",
+          "Tokens só existem na resposta do modelo, não no prompt"
+        ],
+        correct: 1,
+        explanation: "Palavras longas ou pouco comuns são frequentemente divididas em vários tokens. Espaços e pontuação também contam, e diferentes idiomas têm eficiências de tokenização distintas."
+      }
+    ]
+  },
+  {
+    id: 3,
+    greeting: "Ótimo arranque, Raquel! Agora vamos à estrutura 🏗️",
+    icon: "🏗️",
+    title: "Anatomia de um Prompt",
+    subtitle: "Os quatro ingredientes que compõem um prompt eficaz — aprende a combiná-los.",
+    content: [
+      {
+        type: "text",
+        body: "Um prompt bem construído tem geralmente quatro componentes. Não precisas de usar todos sempre, mas conhecê-los vai ajudar-te a perceber porquê uma resposta não ficou como esperavas."
+      },
+      {
+        type: "heading",
+        body: "Os quatro componentes"
+      },
+      {
+        type: "list",
+        items: [
+          "**Instrução** — O que queres que o modelo faça. É o componente mais importante. Ex: 'Resume o seguinte texto.'",
+          "**Contexto** — Informação de fundo que ajuda o modelo a responder melhor. Ex: 'Este texto é destinado a alunos do 8.º ano.'",
+          "**Input** — O material sobre o qual o modelo deve trabalhar. Ex: um artigo, um e-mail, um excerto de código.",
+          "**Formato de output** — Como queres que a resposta seja apresentada. Ex: 'Responde em 3 pontos, sem jargão técnico.'"
+        ]
+      },
+      {
+        type: "tip",
+        title: "Não precisas de todos sempre",
+        body: "Para tarefas simples, Raquel, basta uma instrução clara. Os outros componentes tornam-se importantes quando a tarefa é complexa, específica, ou quando a resposta padrão não te serve."
+      },
+      {
+        type: "heading",
+        body: "Exemplos em prática"
+      },
+      {
+        type: "example",
+        label: "Prompt mínimo (só instrução)",
+        text: "Explica o que é a fotossíntese."
+      },
+      {
+        type: "example",
+        label: "Prompt completo (todos os componentes)",
+        text: "Explica o que é a fotossíntese [instrução] para uma criança de 10 anos que nunca estudou biologia [contexto]. Usa a seguinte definição como base: 'Fotossíntese é o processo pelo qual as plantas produzem o seu alimento.' [input] Responde em no máximo 4 frases simples. [formato]"
+      },
+      {
+        type: "info",
+        title: "Ordem dos componentes",
+        body: "A ordem pode variar, mas uma boa prática é começar pela instrução principal. Isso orienta o modelo logo de início sobre o que vai ser pedido."
+      },
+      {
+        type: "professor",
+        label: "dá um exemplo do dia-a-dia",
+        body: "Imagina que entras numa pastelaria e dizes apenas: _'Quero uma'_. O empregado fica à espera. Um bom pedido seria: _'Queria um pastel de nata morno, por favor'_ — tens a **instrução** ('queria'), o **input** ('pastel de nata') e o **formato** ('morno'). Se adicionasses _'é para oferecer a uma amiga que não gosta de doce intenso'_, estarias a dar **contexto**. Quanto mais completo o pedido, melhor o resultado!"
+      }
+    ],
+    quiz: [
+      {
+        q: "Qual é o componente mais essencial de qualquer prompt?",
+        opts: ["O contexto", "A instrução", "O formato de output", "O input"],
+        correct: 1,
+        explanation: "A instrução é o núcleo do prompt — diz ao modelo o que fazer. Os outros componentes enriquecem e precisam essa instrução."
+      },
+      {
+        q: "Escreves: 'Classifica este feedback de cliente como positivo ou negativo, em apenas uma palavra.' Qual componente está em falta para o prompt ficar completo?",
+        opts: ["A instrução", "O contexto", "O input (o texto do feedback)", "O formato"],
+        correct: 2,
+        explanation: "Temos instrução ('classifica') e formato ('uma palavra'), mas falta o input — o texto do feedback que deve ser classificado."
+      },
+      {
+        q: "Para que serve o componente 'formato de output'?",
+        opts: [
+          "Para dizer ao modelo qual idioma usar",
+          "Para fornecer exemplos de boas respostas",
+          "Para especificar como a resposta deve ser estruturada ou apresentada",
+          "Para indicar o assunto sobre o qual deve responder"
+        ],
+        correct: 2,
+        explanation: "O formato de output controla a estrutura da resposta: listas, parágrafos, número de palavras, tom, etc."
+      }
+    ]
+  },
+  {
+    id: 4,
+    greeting: "Muito bem, Raquel! Vamos aprender a ser precisos 🎯",
+    icon: "🎯",
+    title: "Clareza e Especificidade",
+    subtitle: "Prompts vagos produzem respostas vagas. Aprende a ser precisa.",
+    content: [
+      {
+        type: "text",
+        body: "O erro mais comum de quem começa — e não és a única, Raquel — é escrever prompts demasiado vagos. O modelo vai sempre gerar algo — mas sem especificidade, vai 'adivinhar' o que quer, com resultados mediocres."
+      },
+      {
+        type: "heading",
+        body: "Vago vs. específico"
+      },
+      {
+        type: "example",
+        variant: "bad",
+        label: "❌ Vago",
+        text: "Escreve sobre marketing."
+      },
+      {
+        type: "example",
+        variant: "good",
+        label: "✓ Específico",
+        text: "Escreve uma introdução de 150 palavras para um artigo de blog sobre marketing de conteúdo nas redes sociais, dirigido a pequenas empresas portuguesas. Tom: informal e encorajador."
+      },
+      {
+        type: "text",
+        body: "A versão específica define: o tipo de texto (introdução de artigo), o tamanho (150 palavras), o tema exato (marketing de conteúdo em redes sociais), o público (pequenas empresas portuguesas), e o tom (informal, encorajador)."
+      },
+      {
+        type: "heading",
+        body: "Perguntas para tornares o teu prompt mais específico"
+      },
+      {
+        type: "list",
+        items: [
+          "**Quem** vai ler ou usar o output? (público-alvo)",
+          "**O quê** exatamente quer que seja produzido? (tipo e formato)",
+          "**Quanto?** Qual o tamanho ou extensão esperados?",
+          "**Porquê?** Qual é o objetivo do output?",
+          "**Como?** Existe um estilo, tom ou restrição particular?"
+        ]
+      },
+      {
+        type: "tip",
+        title: "Especificidade ≠ Comprimento",
+        body: "Um prompt específico pode ser curto. O objetivo é eliminar ambiguidade, não escrever mais. 'Traduz para português europeu, mantendo o registo formal' é curto e ao mesmo tempo muito específico."
+      },
+      {
+        type: "example",
+        variant: "bad",
+        label: "❌ Ambíguo",
+        text: "Melhora este e-mail."
+      },
+      {
+        type: "example",
+        variant: "good",
+        label: "✓ Sem ambiguidade",
+        text: "Reescreve este e-mail tornando-o mais conciso (máximo 5 frases) e com um tom mais profissional, sem perder a informação essencial."
+      },
+      {
+        type: "professor",
+        label: "dá um exemplo do dia-a-dia",
+        body: "Imagina que mandas uma mensagem à tua mãe: _'Faz qualquer coisa para jantar'_. Ela não sabe se queres sopa, se tens restrições, se chega cedo ou tarde. Resultado: bacalhau com natas quando estavas a sonhar com uma salada leve. Agora imagina: _'Mãe, fazes uma omelete simples? Chego às 20h e não estou com fome de prato cheio'_. **Instrução clara = resultado certo.**"
+      }
+    ],
+    quiz: [
+      {
+        q: "Qual destes prompts tem maior probabilidade de gerar uma resposta útil?",
+        opts: [
+          "'Fala-me de Python.'",
+          "'Explica o conceito de listas em Python com 2 exemplos de código simples, para alguém que nunca programou.'",
+          "'Python é uma linguagem de programação. Diz-me mais.'",
+          "'Quero saber Python.'"
+        ],
+        correct: 1,
+        explanation: "O segundo prompt define o conceito específico (listas), o formato (2 exemplos de código), o nível do utilizador (nunca programou), e o tema exato — eliminando toda a ambiguidade."
+      },
+      {
+        q: "O que acontece quando envias um prompt vago a um LLM?",
+        opts: [
+          "O modelo pede esclarecimentos antes de responder",
+          "O modelo recusa-se a responder",
+          "O modelo gera uma resposta genérica baseada na sua melhor suposição sobre o que foi pedido",
+          "O modelo gera sempre a mesma resposta padrão"
+        ],
+        correct: 2,
+        explanation: "O LLM vai sempre tentar gerar algo. Sem especificidade, o modelo interpreta o prompt da forma mais genérica possível, produzindo resultados frequentemente desadequados."
+      },
+      {
+        q: "Qual destes elementos NÃO contribui para um prompt mais específico?",
+        opts: [
+          "Indicar o tamanho do output desejado",
+          "Especificar o público-alvo",
+          "Escrever o prompt em letras maiúsculas",
+          "Definir o tom ou registo da resposta"
+        ],
+        correct: 2,
+        explanation: "Escrever em maiúsculas não torna um prompt mais específico — o modelo não interpreta maiúsculas como ênfase. O que muda resultados são as instruções substantivas."
+      }
+    ]
+  },
+  {
+    id: 5,
+    greeting: "A meio caminho, Raquel! Este capítulo é muito divertido 🎭",
+    icon: "🎭",
+    title: "Definir um Papel",
+    subtitle: "Role prompting: atribui uma persona ao modelo para obteres melhores resultados.",
+    content: [
+      {
+        type: "text",
+        body: "Uma das técnicas mais simples e eficazes é dizer ao modelo **quem deve ser** enquanto responde. Isto chama-se *role prompting* — definir um papel ou persona. O modelo vai adaptar o vocabulário, o tom, o nível de detalhe, e o ângulo da resposta. Experimenta, Raquel — os resultados vão surpreender-te."
+      },
+      {
+        type: "example",
+        label: "Exemplos de definição de papel",
+        text: "Age como um advogado especialista em direito do trabalho português.\n\nAge como um professor de matemática do ensino secundário.\n\nAge como um copywriter experiente em marketing B2B.\n\nAge como um médico de clínica geral a explicar a um doente."
+      },
+      {
+        type: "heading",
+        body: "Por que resulta?"
+      },
+      {
+        type: "text",
+        body: "O modelo foi treinado em texto produzido por inúmeros perfis de pessoas. Ao especificares um papel, estás a ativar padrões linguísticos e de raciocínio associados a esse perfil. Um 'especialista em segurança informática' vai responder de forma diferente de um 'explicador para crianças' — mesmo sobre o mesmo tema."
+      },
+      {
+        type: "example",
+        variant: "bad",
+        label: "Sem papel definido",
+        text: "O que é um buffer overflow?"
+      },
+      {
+        type: "example",
+        variant: "good",
+        label: "Com papel definido (resposta mais focada)",
+        text: "Age como um especialista em cibersegurança a formar developers juniores. Explica o que é um buffer overflow e qual o impacto prático para a segurança de uma aplicação."
+      },
+      {
+        type: "heading",
+        body: "Definir a audiência também ajuda"
+      },
+      {
+        type: "text",
+        body: "Além do papel do modelo, podes também especificar **quem vai ler a resposta**. Isto é igualmente poderoso:"
+      },
+      {
+        type: "example",
+        label: "Audiência como instrução",
+        text: "Explica o que é blockchain para um empresário de 55 anos sem conhecimentos técnicos.\n\nExplica o que é blockchain para um developer com 5 anos de experiência em backend."
+      },
+      {
+        type: "tip",
+        title: "Combine papel com contexto",
+        body: "A combinação mais eficaz é: papel do modelo + descrição da audiência + instrução. Ex: 'Age como nutricionista. O meu cliente é um atleta de resistência. Cria um plano de refeições para um dia de competição.'"
+      },
+      {
+        type: "professor",
+        label: "dá um exemplo do dia-a-dia",
+        body: "Imagina que tens dores nas costas e ligas a perguntar a um amigo. Se o teu amigo for designer gráfico, vai dar-te uma opinião genérica. Se for fisioterapeuta, a resposta é completamente diferente — mais técnica, mais útil. **Definir o papel do LLM funciona exatamente assim**: dizes-lhe que 'especialidade' deve usar para te responder. O modelo tem conhecimento de muitas áreas — o papel diz-lhe _qual_ usar."
+      }
+    ],
+    quiz: [
+      {
+        q: "Qual o principal benefício de usar role prompting?",
+        opts: [
+          "Faz o modelo responder mais rapidamente",
+          "Obriga o modelo a verificar factos antes de responder",
+          "Adapta o tom, vocabulário e ângulo da resposta ao perfil definido",
+          "Aumenta o comprimento da resposta"
+        ],
+        correct: 2,
+        explanation: "Ao especificares um papel, estás a ativar padrões linguísticos e de raciocínio associados a esse perfil, tornando a resposta mais adequada ao contexto."
+      },
+      {
+        q: "Qual destes é o melhor exemplo de role prompting bem aplicado?",
+        opts: [
+          "'Sê criativo na tua resposta.'",
+          "'Responde como se fosses muito inteligente.'",
+          "'Age como um gestor de produto experiente e avalia esta proposta de funcionalidade.'",
+          "'Usa um bom papel ao responder.'"
+        ],
+        correct: 2,
+        explanation: "A opção C define um papel concreto ('gestor de produto experiente') com uma tarefa específica ('avaliar uma proposta'). As outras opções são vagas ou sem significado prático."
+      },
+      {
+        q: "Além de definires o papel do modelo, o que mais podes especificar para melhorar a resposta?",
+        opts: [
+          "O número de palavras que o modelo tem disponíveis",
+          "A audiência que vai ler a resposta",
+          "A velocidade de geração de texto",
+          "O número de parâmetros do modelo"
+        ],
+        correct: 1,
+        explanation: "Especificares a audiência (ex: 'para um leigo sem conhecimentos técnicos' ou 'para um developer sénior') adapta o nível de complexidade e o vocabulário da resposta."
+      }
+    ]
+  },
+  {
+    id: 6,
+    greeting: "Parabéns Raquel, mais de metade feita! Vamos pensar juntos 🔗",
+    icon: "🔗",
+    title: "Cadeia de Pensamento",
+    subtitle: "Pede ao modelo que pense em voz alta e obtém raciocínios muito mais fiáveis.",
+    content: [
+      {
+        type: "text",
+        body: "Os LLMs tendem a cometer erros em tarefas que requerem múltiplos passos de raciocínio — matemática, lógica, decisões complexas. A técnica de **cadeia de pensamento** (*chain-of-thought*) resolve isto pedindo explicitamente ao modelo que mostre o seu raciocínio passo a passo. Guarda bem esta técnica, Raquel — é uma das mais poderosas do curso."
+      },
+      {
+        type: "example",
+        variant: "bad",
+        label: "❌ Sem cadeia de pensamento",
+        text: "Se tenho 3 caixas com 8 maçãs cada, e dou metade das maçãs a um amigo, quantas maçãs me ficam?"
+      },
+      {
+        type: "example",
+        variant: "good",
+        label: "✓ Com cadeia de pensamento",
+        text: "Se tenho 3 caixas com 8 maçãs cada, e dou metade das maçãs a um amigo, quantas maçãs me ficam? Pensa passo a passo antes de dar a resposta final."
+      },
+      {
+        type: "text",
+        body: "Adicionando 'Pensa passo a passo', o modelo vai primeiro calcular o total (3 × 8 = 24), depois calcular a metade (24 ÷ 2 = 12), e só então dar a resposta. Este processo reduz significativamente os erros."
+      },
+      {
+        type: "heading",
+        body: "Frases que ativam a cadeia de pensamento"
+      },
+      {
+        type: "list",
+        items: [
+          "'Pensa passo a passo.'",
+          "'Explica o teu raciocínio antes de concluir.'",
+          "'Analisa cada parte separadamente.'",
+          "'Antes de responder, lista os fatores relevantes.'",
+          "'Mostra o teu trabalho.'"
+        ]
+      },
+      {
+        type: "info",
+        title: "Quando usar esta técnica?",
+        body: "Cadeia de pensamento é especialmente útil em: problemas matemáticos, questões com múltiplas condições, análise de prós e contras, decisões com trade-offs, e qualquer situação onde o raciocínio importa mais do que uma resposta direta."
+      },
+      {
+        type: "tip",
+        title: "Separar raciocínio de output",
+        body: "Podes combinar a cadeia de pensamento com instruções de formato: 'Pensa passo a passo [raciocínio interno], mas apresenta apenas a conclusão final de forma sucinta.'"
+      },
+      {
+        type: "professor",
+        label: "dá um exemplo do dia-a-dia",
+        body: "Imagina que a Raquel pede ao irmão para calcular quanto fica a divisão da conta de um jantar entre 5 pessoas. Se ele responder _'fica 14,60€'_ sem explicar, fias-te ou verificas? Agora se ele disser: _'O total é 73€. Dividido por 5 dá 14,60€ cada'_, já podes confirmar que o raciocínio está certo. **Mostrar os passos permite verificar — e reduz erros a meio do caminho.**"
+      }
+    ],
+    quiz: [
+      {
+        q: "Qual a principal vantagem de usar a técnica de cadeia de pensamento?",
+        opts: [
+          "Faz o modelo responder mais depressa",
+          "Reduz erros em tarefas que requerem raciocínio em múltiplos passos",
+          "Diminui o comprimento das respostas",
+          "Melhora a criatividade do modelo"
+        ],
+        correct: 1,
+        explanation: "Ao forçar o modelo a mostrar o raciocínio passo a passo, cada etapa serve de contexto para a seguinte, reduzindo erros em lógica, matemática, e decisões complexas."
+      },
+      {
+        q: "Qual destas frases NÃO ativa a cadeia de pensamento?",
+        opts: [
+          "'Pensa passo a passo.'",
+          "'Explica o teu raciocínio antes de concluir.'",
+          "'Responde de forma concisa e direta.'",
+          "'Analisa cada parte separadamente.'"
+        ],
+        correct: 2,
+        explanation: "'Responde de forma concisa e direta' incentiva respostas rápidas sem raciocínio exposto — o oposto da técnica de cadeia de pensamento."
+      },
+      {
+        q: "Quero usar cadeia de pensamento mas quero que o output final seja apenas uma conclusão curta. O que faço?",
+        opts: [
+          "Não é possível combinar as duas coisas",
+          "Uso a cadeia de pensamento e depois instruo: 'apresenta apenas a conclusão final de forma sucinta'",
+          "Devo escolher entre raciocínio detalhado ou resposta curta",
+          "Preciso de dois prompts separados"
+        ],
+        correct: 1,
+        explanation: "É perfeitamente possível combinar: 'Pensa passo a passo internamente, mas apresenta apenas a conclusão final de forma sucinta.' O modelo faz o raciocínio e depois filtra o output."
+      }
+    ]
+  },
+  {
+    id: 7,
+    greeting: "Quase lá, Raquel! Os exemplos falam por si 📚",
+    icon: "📚",
+    title: "Few-Shot Prompting",
+    subtitle: "Dá exemplos ao modelo e define exatamente o que esperas — sem ambiguidade.",
+    content: [
+      {
+        type: "text",
+        body: "Em vez de descreveres o que queres com palavras, podes **mostrar exemplos** do resultado esperado. Esta técnica chama-se *few-shot prompting*. É incrivelmente eficaz para tarefas de classificação, formatação, ou qualquer situação onde é difícil descrever o padrão por palavras."
+      },
+      {
+        type: "heading",
+        body: "Zero-shot, One-shot, Few-shot"
+      },
+      {
+        type: "list",
+        items: [
+          "**Zero-shot:** Nenhum exemplo. Só instrução. Funciona para tarefas simples.",
+          "**One-shot:** Um exemplo. Clarifica o padrão esperado.",
+          "**Few-shot:** Dois a cinco exemplos. Ideal para padrões complexos ou formatos específicos."
+        ]
+      },
+      {
+        type: "example",
+        variant: "bad",
+        label: "Zero-shot (pode ser ambíguo)",
+        text: "Classifica o sentimento destas frases como Positivo ou Negativo."
+      },
+      {
+        type: "example",
+        variant: "good",
+        label: "Few-shot (o padrão fica claro)",
+        text: `Classifica o sentimento como Positivo ou Negativo.
+
+Frase: "O serviço foi excecional e voltarei com certeza."
+Sentimento: Positivo
+
+Frase: "Fiquei à espera 40 minutos sem qualquer explicação."
+Sentimento: Negativo
+
+Frase: "A comida estava fria e o empregado foi rude."
+Sentimento:`
+      },
+      {
+        type: "text",
+        body: "O modelo percebe o padrão 'Frase → Sentimento' pelos exemplos e aplica-o ao novo caso. Não precisas de explicar nada, Raquel — os exemplos falam por si."
+      },
+      {
+        type: "tip",
+        title: "Exemplos como especificação de formato",
+        body: "Few-shot é especialmente poderoso para definir formatos de output complexos. Se queres JSON, Markdown, ou qualquer estrutura específica, dar um ou dois exemplos é muitas vezes mais eficaz do que descrever a estrutura."
+      },
+      {
+        type: "example",
+        label: "Few-shot para formatar output",
+        text: `Extrai nome e e-mail do texto.
+
+Texto: "Olá, sou a Ana Ferreira e o meu e-mail é ana@empresa.pt"
+Output: {"nome": "Ana Ferreira", "email": "ana@empresa.pt"}
+
+Texto: "Podem contactar o João Silva em joao.silva@mail.com"
+Output:`
+      },
+      {
+        type: "info",
+        title: "Quantos exemplos usar?",
+        body: "2 a 4 exemplos são geralmente suficientes. Mais de 5 raramente melhora os resultados e ocupa espaço precioso no contexto. Certifica-te de que os exemplos são variados e representativos dos casos que vais encontrar."
+      },
+      {
+        type: "professor",
+        label: "dá um exemplo do dia-a-dia",
+        body: "Imagina que és a responsável numa loja e contratas uma funcionária nova para separar encomendas em _'urgente'_ ou _'normal'_. Em vez de escrever um manual de 20 páginas, mostras dois exemplos: _'Esta é urgente — o cliente ligou a pedir para hoje. Esta é normal — chegou por e-mail sem data específica.'_ Dois exemplos chegam para ela perceber o padrão. **É exatamente assim que o few-shot prompting funciona** — mostras o padrão, o modelo aplica-o."
+      }
+    ],
+    quiz: [
+      {
+        q: "O que distingue o few-shot prompting do zero-shot prompting?",
+        opts: [
+          "O few-shot usa prompts mais longos",
+          "O few-shot inclui exemplos do output esperado no próprio prompt",
+          "O few-shot requer um modelo mais avançado",
+          "O few-shot só funciona com tarefas de classificação"
+        ],
+        correct: 1,
+        explanation: "A diferença fundamental é a presença de exemplos. No zero-shot há apenas a instrução; no few-shot, um ou mais pares input/output demonstram o padrão esperado."
+      },
+      {
+        q: "Para que tipo de tarefa é o few-shot prompting MAIS útil?",
+        opts: [
+          "Responder a perguntas gerais de conhecimento",
+          "Gerar texto criativo livre",
+          "Tarefas com padrões específicos de formatação ou classificação",
+          "Resumir textos longos"
+        ],
+        correct: 2,
+        explanation: "Few-shot brilha quando há um padrão específico de input→output (classificação, extração, formatação). Para texto livre ou conhecimento geral, zero-shot costuma ser suficiente."
+      },
+      {
+        q: "Quantos exemplos são geralmente suficientes num few-shot prompt?",
+        opts: [
+          "1 a 2 (nunca mais do que isso)",
+          "10 a 20 para o modelo generalizar bem",
+          "2 a 4 exemplos variados e representativos",
+          "Exatamente 5, nem mais nem menos"
+        ],
+        correct: 2,
+        explanation: "2 a 4 exemplos bem escolhidos são tipicamente suficientes. Mais de 5 raramente acrescenta qualidade e ocupa espaço no contexto do modelo."
+      }
+    ]
+  },
+  {
+    id: 8,
+    greeting: "Último capítulo, Raquel! Vai ser incrível 🔄",
+    icon: "🔄",
+    title: "Iteração e Refinamento",
+    subtitle: "O prompting é um diálogo, não um tiro único. Itera e melhora.",
+    content: [
+      {
+        type: "text",
+        body: "O erro mais comum após obteres uma resposta insatisfatória é desistires ou recomeçares do zero. Na realidade, o prompting é **um processo iterativo**, Raquel. A primeira resposta raramente é a ideal — e não tem de ser. O objetivo é refinar progressivamente."
+      },
+      {
+        type: "heading",
+        body: "Estratégias de refinamento"
+      },
+      {
+        type: "list",
+        items: [
+          "**Sê mais específica:** 'Bom, mas preciso que seja mais formal e com menos de 100 palavras.'",
+          "**Corrige o que está errado:** 'O tom está certo, mas o facto X está incorreto. Mantém o tom e corrige apenas esse ponto.'",
+          "**Pede variações:** 'Dá-me 3 versões alternativas com ângulos diferentes.'",
+          "**Bloqueia o que já está bem:** 'Mantém a estrutura mas muda o exemplo da introdução.'",
+          "**Pergunta ao modelo:** 'O que precisas de saber para dar uma resposta mais útil?'"
+        ]
+      },
+      {
+        type: "info",
+        title: "O modelo lembra o contexto da conversa",
+        body: "Na mesma sessão de chat, o modelo recorda tudo o que foi dito. Podes referenciar respostas anteriores, pedir alterações, e o modelo vai trabalhar sobre o que já existe — não começa do zero."
+      },
+      {
+        type: "heading",
+        body: "O ciclo de prompting eficaz"
+      },
+      {
+        type: "example",
+        label: "Exemplo de ciclo iterativo",
+        text: `1. Prompt inicial:
+"Escreve um e-mail a um cliente a informar de um atraso na entrega."
+
+2. Resposta: demasiado formal e longa.
+Refinamento: "Está demasiado formal. Reescreve em tom mais próximo e direto, máximo 5 linhas."
+
+3. Resposta: melhor, mas não menciona compensação.
+Refinamento: "Bom. Adiciona uma frase final a oferecer 10% de desconto na próxima encomenda."
+
+4. Resultado final: exatamente o que precisava.`
+      },
+      {
+        type: "tip",
+        title: "Meta-prompting: pergunta ao modelo",
+        body: "Se não sabes como melhorar o teu prompt, pergunta ao modelo: 'Como poderia reformular esta pergunta para obter uma resposta mais útil?' ou 'O que está pouco claro no meu pedido?' Os modelos modernos são bons a autodiagnosticar."
+      },
+      {
+        type: "text",
+        body: "Com o tempo, vais desenvolver intuição sobre o que funciona. Cada iteração é aprendizagem — tanto sobre o modelo, como sobre o que realmente queres como output."
+      },
+      {
+        type: "professor",
+        label: "dá um exemplo do dia-a-dia",
+        body: "Imagina que estás a escrever uma mensagem de parabéns para uma amiga. Escreves um rascunho, lês, e achas que está demasiado formal. Reescreves. Desta vez muito curta. Ajustas novamente. Na terceira versão está perfeita. **Prompting é exatamente assim** — raramente o primeiro rascunho é o final. A diferença é que com um LLM as versões saem em segundos, não minutos. Não tenhas medo de pedir _'está quase, mas...'_"
+      }
+    ],
+    quiz: [
+      {
+        q: "Qual é a melhor abordagem quando a primeira resposta de um LLM não é satisfatória?",
+        opts: [
+          "Começar uma nova conversa do zero com um prompt completamente diferente",
+          "Aceitar a resposta, pois o modelo não pode fazer melhor",
+          "Refinar o prompt na mesma conversa, especificando o que está errado e o que quer melhorar",
+          "Repetir o mesmo prompt — a segunda resposta é sempre melhor"
+        ],
+        correct: 2,
+        explanation: "O refinamento na mesma conversa é a abordagem mais eficaz. O modelo tem o contexto da conversa anterior e podes trabalhar incrementalmente sobre o que já existe."
+      },
+      {
+        q: "Queres manter a estrutura de uma resposta mas mudar apenas o exemplo na introdução. Qual o melhor refinamento?",
+        opts: [
+          "'Reescreve tudo com um exemplo diferente na introdução.'",
+          "'Mantém a estrutura e o conteúdo, substitui apenas o exemplo da introdução por algo relacionado com tecnologia.'",
+          "'Não gostei. Faz melhor.'",
+          "'Pode ser diferente?'"
+        ],
+        correct: 1,
+        explanation: "O segundo refinamento é preciso: diz o que deve permanecer igual ('mantém a estrutura'), o que deve mudar ('substitui o exemplo'), e como deve mudar ('relacionado com tecnologia')."
+      },
+      {
+        q: "O que significa 'meta-prompting' no contexto do refinamento?",
+        opts: [
+          "Usar prompts muito longos com muita informação",
+          "Pedir ao próprio modelo que ajude a melhorar o prompt",
+          "Usar múltiplos modelos em simultâneo",
+          "Guardar prompts eficazes numa base de dados"
+        ],
+        correct: 1,
+        explanation: "Meta-prompting é usar o modelo para refletir sobre o próprio processo, como perguntar 'O que está pouco claro no meu pedido?' ou 'Como reformularia esta questão para obter uma resposta melhor?'"
+      }
+    ]
+  }
+];
+
+const EXAM_QUESTIONS = [
+  { q: "O que é tecnicamente um LLM?", opts: ["Um motor de pesquisa avançado","Um sistema que prevê texto com base em padrões estatísticos aprendidos","Uma base de dados de respostas predefinidas","Um humano que responde anonimamente"], correct: 1, chapter: "Cap. 1", explanation: "LLMs são modelos estatísticos que preveem o próximo token — não consultam bases de dados nem são motores de pesquisa." },
+  { q: "Quais são os quatro componentes de um prompt completo?", opts: ["Pergunta, resposta, exemplo, conclusão","Instrução, contexto, input, formato de output","Papel, tom, tamanho, idioma","Objetivo, método, conteúdo, validação"], correct: 1, chapter: "Cap. 2", explanation: "Instrução (o quê), contexto (porquê/para quem), input (sobre o quê), e formato de output (como apresentar)." },
+  { q: "Porque razão prompts vagos produzem respostas insatisfatórias?", opts: ["O modelo recusa responder a prompts vagos","O modelo gera respostas baseadas na sua melhor suposição, sem guia claro","Prompts vagos consomem mais recursos computacionais","O modelo fica confuso e gera erros técnicos"], correct: 1, chapter: "Cap. 3", explanation: "Sem especificidade, o modelo 'adivinha' o que o utilizador quer — e essa suposição raramente corresponde à necessidade real." },
+  { q: "O que é role prompting?", opts: ["Pedir ao modelo para jogar um jogo de papéis","Atribuir uma persona ou especialidade ao modelo para adaptar a sua resposta","Definir o papel do utilizador na conversa","Dar ao modelo um papel numa peça de teatro"] , correct: 1, chapter: "Cap. 4", explanation: "Role prompting consiste em dizer ao modelo quem deve 'ser' enquanto responde, ativando padrões linguísticos associados a esse perfil." },
+  { q: "A frase 'Pensa passo a passo' é um exemplo de que técnica?", opts: ["Few-shot prompting","Role prompting","Cadeia de pensamento (chain-of-thought)","Meta-prompting"], correct: 2, chapter: "Cap. 5", explanation: "Esta frase ativa a cadeia de pensamento, pedindo ao modelo que exponha o seu raciocínio antes de dar a resposta final." },
+  { q: "Tem 3 caixas com 12 laranjas cada. Dá um terço ao vizinho. Quantas ficam? (Pensa passo a passo)", opts: ["24","12","36","18"], correct: 0, chapter: "Cap. 5", explanation: "Total = 3×12 = 36. Um terço = 36÷3 = 12. Ficam 36 − 12 = 24 laranjas." },
+  { q: "Num few-shot prompt, o que fornece além da instrução?", opts: ["Apenas o contexto detalhado","Exemplos do par input/output esperado","Uma lista de regras a seguir","A definição de um papel para o modelo"], correct: 1, chapter: "Cap. 6", explanation: "O few-shot prompting demonstra o padrão esperado através de exemplos concretos de input e o output correspondente." },
+  { q: "Qual é a melhor abordagem quando a resposta está quase certa mas tem um detalhe errado?", opts: ["Iniciar uma conversa nova","Ignorar o erro e usar o que está certo","Refinar na mesma conversa: 'O facto X está errado. Mantém tudo o resto e corrige apenas esse ponto.'","Repetir o prompt original mais vezes"], correct: 2, chapter: "Cap. 7", explanation: "Refinamento cirúrgico: preservar o que está bem e corrigir apenas o que está errado é mais eficiente que recomeçar." },
+  { q: "Qual prompt vai produzir a resposta mais focada e útil?", opts: ["'Fala de sustentabilidade.'","'Que é sustentabilidade?'","'Age como consultor ambiental. Explica em 3 pontos concretos como uma PME pode reduzir a sua pegada de carbono.'","'Sustentabilidade é importante. Explica.'"], correct: 2, chapter: "Caps. 3 & 4", explanation: "A terceira opção combina role prompting, especificidade (PME, pegada de carbono) e formato definido (3 pontos concretos)." },
+  { q: "Quer usar few-shot para classificar e-mails como 'Urgente' ou 'Normal'. Quantos exemplos são ideais?", opts: ["0 exemplos — a instrução é suficiente","1 exemplo apenas","2 a 4 exemplos variados","10 ou mais exemplos para o modelo generalizar"], correct: 2, chapter: "Cap. 6", explanation: "2 a 4 exemplos são suficientes para estabelecer o padrão. Mais exemplos raramente melhoram e consomem contexto." },
+  { q: "O que é meta-prompting?", opts: ["Criar prompts extremamente longos","Usar o modelo para ajudar a melhorar o próprio prompt","Usar vários modelos ao mesmo tempo","Guardar prompts numa biblioteca pessoal"], correct: 1, chapter: "Cap. 7", explanation: "Meta-prompting é perguntar ao próprio modelo como reformular ou melhorar o pedido." },
+  { q: "Qual componente do prompt NÃO está presente em: 'Resume em 3 frases o seguinte artigo: [artigo]'?", opts: ["Instrução","Input","Formato de output","Contexto / audiência"], correct: 3, chapter: "Cap. 2", explanation: "Temos instrução ('resume'), formato ('3 frases') e input ('[artigo]') — falta contexto como para quem é, qual o objetivo, etc." },
+  { q: "O modelo lembra o que foi dito anteriormente numa conversa. Qual a implicação prática?", opts: ["Deve sempre começar uma nova conversa para cada tarefa","Pode construir e refinar respostas progressivamente na mesma sessão","O modelo vai contradizer-se se a conversa for longa","Deve evitar referir respostas anteriores para não confundir o modelo"], correct: 1, chapter: "Cap. 7", explanation: "O contexto acumulado da conversa é uma vantagem — permite refinamento progressivo sem repetir toda a informação." },
+  { q: "Qual destes prompts usa MELHOR a cadeia de pensamento para um problema de decisão?", opts: ["'Devo aceitar esta proposta de emprego? Sim ou não?'","'Analisa os prós e contras desta proposta, raciocina sobre cada fator, e só no final dá uma recomendação fundamentada.'","'É boa ideia aceitar este emprego?'","'Decide por mim se devo aceitar este emprego.'"], correct: 1, chapter: "Cap. 5", explanation: "A segunda opção pede explicitamente análise de prós e contras, raciocínio por fatores, e adiamento da conclusão — características da cadeia de pensamento." },
+  { q: "Qual afirmação sobre LLMs é VERDADEIRA?", opts: ["Os LLMs têm acesso em tempo real à internet por padrão","Os LLMs podem garantir 100% de precisão factual","Os LLMs geram texto plausível com base em padrões, podendo cometer erros com confiança","Os LLMs recordam todas as conversas que já tiveram"], correct: 2, chapter: "Cap. 1", explanation: "LLMs podem gerar texto incorreto com aparente confiança — fenómeno chamado 'alucinação'. Verificar factos importantes é sempre recomendado." }
+];
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+const LETTERS = ['A','B','C','D'];
+
+function getStars(pct) {
+  if (pct === 100) return '★★★';
+  if (pct >= 67) return '★★☆';
+  return '★☆☆';
+}
+
+function getMessage(pct) {
+  if (pct === 100) return 'Perfeito! Dominaste completamente este capítulo.';
+  if (pct >= 67) return 'Bom trabalho! Revê as questões em que erraste para consolidar o conhecimento.';
+  return 'Não desanimes — revê o capítulo e tenta de novo. A aprendizagem vem com repetição.';
+}
+
+function getExamTitle(pct) {
+  if (pct >= 90) return '🎓 Excelente — Prompting Expert!';
+  if (pct >= 70) return '✅ Bom resultado — Continua a praticar!';
+  if (pct >= 50) return '📖 A melhorar — Revê os capítulos fracos';
+  return '🔁 Precisas de mais estudo — Volta aos capítulos';
+}
+
+// ─── COMPONENTS ──────────────────────────────────────────────────────────────
+
+function ContentBlock({ block }) {
+  if (block.type === 'text') {
+    const html = block.body.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    return <div className="block"><p dangerouslySetInnerHTML={{__html: html}} /></div>;
+  }
+  if (block.type === 'heading') {
+    return <div className="block"><h3>{block.body}</h3></div>;
+  }
+  if (block.type === 'list') {
+    return (
+      <div className="block">
+        <ul>
+          {block.items.map((item, i) => {
+            const html = item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            return <li key={i} dangerouslySetInnerHTML={{__html: html}} />;
+          })}
+        </ul>
+      </div>
+    );
+  }
+  if (block.type === 'professor') {
+    return (
+      <div className="block">
+        <div className="professor-card">
+          <div className="professor-avatar">🤓</div>
+          <div className="professor-content">
+            <div className="professor-label">Professor Pedro {block.label || 'explica'}</div>
+            <div className="professor-body" dangerouslySetInnerHTML={{__html: block.body.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/_(.*?)_/g,'<em>$1</em>')}} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (block.type === 'tip') {
+    return (
+      <div className="block">
+        <div className="tip-card">
+          <span className="tip-icon">💡</span>
+          <p><strong>{block.title}</strong>{block.body}</p>
+        </div>
+      </div>
+    );
+  }
+  if (block.type === 'info') {
+    return (
+      <div className="block">
+        <div className="info-card">
+          <span className="tip-icon">ℹ️</span>
+          <p><strong>{block.title}</strong>{block.body}</p>
+        </div>
+      </div>
+    );
+  }
+  if (block.type === 'example') {
+    const cls = block.variant === 'bad' ? 'example-card example-bad' : block.variant === 'good' ? 'example-card example-good' : 'example-card';
+    return (
+      <div className="block">
+        <div className={cls}>
+          <div className="example-header">{block.label}</div>
+          <div className="example-body">{block.text}</div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
+function QuizQuestion({ question, qIndex, total, onAnswer, answered, selected }) {
+  return (
+    <div className="pop-in">
+      <div className="quiz-header">
+        <span className="quiz-badge">Quiz</span>
+        <span className="quiz-title">Testa o teu conhecimento</span>
+        <span className="quiz-progress-text">{qIndex + 1} / {total}</span>
+      </div>
+      <div className="question-text">{question.q}</div>
+      <div className="options-list">
+        {question.opts.map((opt, i) => {
+          let cls = 'option-btn';
+          if (answered) {
+            cls += ' answered';
+            if (i === question.correct) cls += ' correct';
+            else if (i === selected && i !== question.correct) cls += ' wrong';
+          } else if (i === selected) {
+            cls += ' selected';
+          }
+          return (
+            <button
+              key={i}
+              className={cls}
+              disabled={answered}
+              onClick={() => !answered && onAnswer(i)}
+            >
+              <span className="option-letter">{LETTERS[i]}</span>
+              <span className="option-text">{opt}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ChapterQuiz({ questions, onComplete }) {
+  const [qIdx, setQIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+  const [answers, setAnswers] = useState([]);
+
+  function handleAnswer(i) {
+    setSelected(i);
+    setAnswered(true);
+    const correct = i === questions[qIdx].correct;
+    if (correct) setScore(s => s + 1);
+    setAnswers(a => [...a, {selected: i, correct}]);
+  }
+
+  function handleNext() {
+    if (qIdx + 1 >= questions.length) {
+      setDone(true);
+    } else {
+      setQIdx(q => q + 1);
+      setSelected(null);
+      setAnswered(false);
+    }
+  }
+
+  const pct = Math.round((score / questions.length) * 100);
+
+  const raquelResults = [
+    { min: 100, msg: "Perfeita, Raquel! 🎉 Dominaste completamente este capítulo." },
+    { min: 67,  msg: "Muito bem, Raquel! Revê as questões em que erraste para consolidar." },
+    { min: 0,   msg: "Não desanimes, Raquel — revê o capítulo e tenta de novo. Consegues!" },
+  ];
+
+  if (done) {
+    const raqMsg = raquelResults.find(r => pct >= r.min)?.msg || raquelResults[2].msg;
+    return (
+      <div className="quiz-section pop-in">
+        <div className="quiz-result">
+          <div className="raquel-greeting">🌸 {raqMsg.split('!')[0]}!</div>
+          <div className="result-score-big">{pct}%</div>
+          <div className="result-label">{score} de {questions.length} corretas</div>
+          <div className="result-stars">{getStars(pct)}</div>
+          <div className="result-message">{raqMsg}</div>
+          <button className="next-chapter-btn" onClick={() => onComplete(score)}>
+            Continuar →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const q = questions[qIdx];
+  return (
+    <div className="quiz-section">
+      <QuizQuestion
+        question={q}
+        qIndex={qIdx}
+        total={questions.length}
+        onAnswer={handleAnswer}
+        answered={answered}
+        selected={selected}
+      />
+      {answered && (
+        <div className={`feedback-box pop-in ${selected === q.correct ? 'correct' : 'wrong'}`}>
+          <strong>{selected === q.correct ? '✓ Correto!' : '✗ Não exatamente.'}</strong>
+          {q.explanation}
+        </div>
+      )}
+      <div className="quiz-actions">
+        {answered && (
+          <button className="btn btn-primary" onClick={handleNext}>
+            {qIdx + 1 >= questions.length ? 'Ver resultado' : 'Próxima →'}
+          </button>
+        )}
+        {!answered && (
+          <button className="btn btn-primary" disabled={selected === null} onClick={() => selected !== null && handleAnswer(selected)}>
+            Confirmar
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ChapterView({ chapter, onQuizComplete, quizDone }) {
+  const [showQuiz, setShowQuiz] = useState(false);
+
+  useEffect(() => {
+    setShowQuiz(false);
+  }, [chapter.id]);
+
+  return (
+    <div className="chapter-view fade-up">
+      <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:16}}>
+        <div className="chapter-tag">Capítulo {chapter.id} de {CHAPTERS.length}</div>
+        <div style={{display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, color:'oklch(42% 0.16 295)', background:'oklch(96% 0.06 295)', border:'1px solid oklch(86% 0.12 295)', borderRadius:99, padding:'3px 12px'}}>
+          🤓 Professor Pedro explica
+        </div>
+      </div>
+      <div className="raquel-greeting">🌸 {chapter.greeting}</div>
+      <h1 className="chapter-title">{chapter.icon} {chapter.title}</h1>
+      <p className="chapter-subtitle">{chapter.subtitle}</p>
+
+      {chapter.content.map((block, i) => (
+        <ContentBlock key={i} block={block} />
+      ))}
+
+      <div className="divider" />
+
+      {quizDone ? (
+        <div className="quiz-section" style={{textAlign:'center', padding:'28px'}}>
+          <div style={{fontSize:32, marginBottom:8}}>✅</div>
+          <div style={{fontWeight:700, color:'var(--green)', fontSize:15}}>Quiz deste capítulo concluído!</div>
+        </div>
+      ) : showQuiz ? (
+        <ChapterQuiz questions={chapter.quiz} onComplete={onQuizComplete} />
+      ) : (
+        <div className="quiz-section" style={{textAlign:'center', padding:'32px'}}>
+          <div style={{fontSize:22, marginBottom:8}}>🤓</div>
+          <div style={{fontSize:15, fontWeight:700, color:'var(--text)', marginBottom:6}}>O Professor Pedro pergunta, Raquel…</div>
+          <div style={{fontSize:14, color:'var(--text-muted)', marginBottom:20, fontWeight:500}}>
+            Estás pronta para testares o que aprendeste neste capítulo?
+          </div>
+          <button className="next-chapter-btn" onClick={() => setShowQuiz(true)}>
+            Iniciar Quiz →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExtraCreditsView() {
+
+  return (
+    <div className="project-view fade-up">
+      <div className="project-header" style={{background:'linear-gradient(135deg, oklch(45% 0.22 0) 0%, oklch(55% 0.20 340) 100%)'}}>
+        <div className="project-header-tag">🌹 Projeto Final — Créditos Extra</div>
+        <h2>Uma mensagem muito especial…</h2>
+        <p>O Professor Pedro tem algo a dizer-te, Raquel. Algo que não está no programa do curso.</p>
+      </div>
+
+      <div className="block">
+        <div className="professor-card" style={{background:'oklch(97% 0.04 0)',border:'1.5px solid oklch(85% 0.10 0)'}}>
+          <div className="professor-avatar" style={{background:'oklch(50% 0.22 0)'}}>🤓</div>
+          <div className="professor-content">
+            <div className="professor-label" style={{color:'oklch(40% 0.18 0)'}}>Professor Pedro — do coração</div>
+            <div className="professor-body" style={{color:'oklch(25% 0.08 0)', fontSize:'16px', lineHeight:'1.9'}}>
+              Raquel, és uma esponja de conhecimento. E também tens um feitiozinho "daqueles", que para mim não é um desalento. Sempre que mandas uma boquinha, o meu coração faz uma coisinha 💓
+              <br/><br/>
+              És única. Nunca mudes. Tens um crédito extra apenas e somente por seres tal como és. 🤓🌹
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+function FinalProjectView({ onComplete }) {
+  const [promptText, setPromptText] = useState('');
+  const [checked, setChecked] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+
+  const checklist = [
+    { id: 'role', label: 'Defini um papel para o modelo (ex: "Age como um formador especialista em…")' },
+    { id: 'audience', label: 'Especifiquei a audiência (ex: "para alguém sem conhecimentos prévios")' },
+    { id: 'structure', label: 'Pedi uma estrutura progressiva — dos conceitos simples aos complexos' },
+    { id: 'format', label: 'Defini o formato de output (ex: módulos, secções, exemplos práticos)' },
+    { id: 'cot', label: 'Usei cadeia de pensamento ou pedi que justifique as escolhas pedagógicas' },
+    { id: 'tone', label: 'Especifiquei o tom e o estilo (formal, informal, com exercícios, etc.)' },
+  ];
+
+  const checkedCount = Object.values(checked).filter(Boolean).length;
+  const allChecked = checkedCount === checklist.length;
+
+  const EXAMPLE_PROMPT = `Age como um formador especialista em nutrição desportiva, com experiência a criar conteúdo pedagógico para adultos.
+
+Cria uma formação completa sobre alimentação para corredores de trail, estruturada do básico ao avançado.
+
+A formação destina-se a corredores amadores que nunca estudaram nutrição de forma sistemática, mas já correm há pelo menos um ano.
+
+Organiza o conteúdo em 5 módulos progressivos:
+— Módulo 1: Conceitos base (macronutrientes, hidratação, energia)
+— Módulo 2: Alimentação no dia-a-dia do atleta
+— Módulo 3: Nutrição pré, durante e pós-treino
+— Módulo 4: Estratégia para provas longas (acima de 4h)
+— Módulo 5: Erros comuns e como corrigi-los
+
+Para cada módulo: inclui uma explicação clara, um exemplo prático do dia-a-dia, e uma dica imediata que o corredor pode aplicar no próximo treino.
+
+Tom: acessível, direto, sem jargão desnecessário. Usa analogias simples sempre que possível.`;
+
+  return (
+    <div className="project-view fade-up">
+      <div className="project-header">
+        <div className="project-header-tag">🎓 Projeto Final de Curso</div>
+        <h2>O teu desafio, Raquel!</h2>
+        <p>O Professor Pedro lança-te o desafio final: usa tudo o que aprendeste neste curso e instrui a tua LLM favorita a criar uma formação completa sobre um tema à tua escolha — dos conceitos mais simples aos mais complexos.</p>
+      </div>
+
+      <div className="block">
+        <div className="professor-card">
+          <div className="professor-avatar">🤓</div>
+          <div className="professor-content">
+            <div className="professor-label">Professor Pedro desafia</div>
+            <div className="professor-body">
+              Raquel, chegou o momento de seres tu a liderar. Escolhe um tema — pode ser profissional (ex: gestão de projetos, marketing digital, contabilidade) ou pessoal (ex: jardinagem, culinária, fotografia). O que interessa é que apliques <strong>todas as técnicas</strong> que aprendeste: define um papel, especifica a audiência, pede raciocínio progressivo, define o formato. O modelo vai surpreender-te com o que é capaz de produzir quando lhe dás instruções de qualidade.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="block"><h3>Como construir o teu prompt</h3></div>
+
+      <div className="project-step">
+        <div className="project-step-num">1</div>
+        <div className="project-step-body">
+          <h4>Escolhe o teu tema</h4>
+          <p>Pode ser qualquer coisa que te interesse ou que precises de aprender. Quanto mais específico, melhor — "finanças pessoais para jovens adultos" é melhor do que "dinheiro".</p>
+        </div>
+      </div>
+      <div className="project-step">
+        <div className="project-step-num">2</div>
+        <div className="project-step-body">
+          <h4>Define o papel do modelo (Cap. 4)</h4>
+          <p>Diz ao modelo que é um formador ou especialista na área. Dá-lhe experiência: "com 10 anos de prática", "especialista em ensino para adultos", etc.</p>
+        </div>
+      </div>
+      <div className="project-step">
+        <div className="project-step-num">3</div>
+        <div className="project-step-body">
+          <h4>Descreve a audiência (Cap. 4)</h4>
+          <p>Para quem é esta formação? Qual o nível de conhecimento inicial? Qual o contexto — profissional, académico, hobby?</p>
+        </div>
+      </div>
+      <div className="project-step">
+        <div className="project-step-num">4</div>
+        <div className="project-step-body">
+          <h4>Pede estrutura progressiva (Cap. 5)</h4>
+          <p>Instrui o modelo a organizar o conteúdo do mais simples ao mais complexo. Usa cadeia de pensamento: pede que justifique a ordem dos módulos antes de os desenvolver.</p>
+        </div>
+      </div>
+      <div className="project-step">
+        <div className="project-step-num">5</div>
+        <div className="project-step-body">
+          <h4>Define o formato de output (Cap. 2)</h4>
+          <p>Quantos módulos? Cada módulo tem explicação + exemplo + exercício? Qual o tom — formal, informal, com humor? Especifica tudo.</p>
+        </div>
+      </div>
+      <div className="project-step">
+        <div className="project-step-num">6</div>
+        <div className="project-step-body">
+          <h4>Itera! (Cap. 7)</h4>
+          <p>O primeiro resultado raramente é o final. Refina: pede para aprofundar um módulo, mudar o tom, adicionar exercícios práticos, simplificar uma explicação. O diálogo é a chave.</p>
+        </div>
+      </div>
+
+      <div className="divider" />
+
+      <div className="block"><h3>Exemplo de prompt completo 🤓</h3></div>
+      <div className="block">
+        <div className="example-card example-good">
+          <div className="example-header">✓ Prompt de referência — usa isto como inspiração</div>
+          <div className="example-body">{EXAMPLE_PROMPT}</div>
+        </div>
+      </div>
+
+      <div className="divider" />
+
+      <div className="block"><h3>Escreve o teu prompt aqui</h3></div>
+      <div className="block">
+        <div className="prompt-builder">
+          <div className="prompt-builder-header">
+            <div className="prompt-builder-title">✍️ O teu prompt de formação</div>
+          </div>
+          <textarea
+            value={promptText}
+            onChange={e => setPromptText(e.target.value)}
+            placeholder={'Age como um formador especialista em [o teu tema]...\n\nCria uma formação completa sobre [tema específico], estruturada do básico ao avançado...\n\nA formação destina-se a [audiência]...\n\nOrganiza em [N] módulos progressivos:\n— Módulo 1: ...\n— Módulo 2: ...'}
+          />
+          <div className="prompt-builder-footer">
+            <span className="prompt-char-count">{promptText.length} caracteres</span>
+            <button
+              className="btn btn-primary"
+              disabled={promptText.length < 50}
+              onClick={() => { setSubmitted(true); onComplete && onComplete(); }}
+            >
+              Marcar como concluído ✓
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="block"><h3>Checklist de qualidade</h3></div>
+      <div className="block">
+        <div className="info-card">
+          <span className="tip-icon">📋</span>
+          <p><strong>Antes de enviar o teu prompt à LLM, verifica:</strong>Marca cada item quando o teu prompt o incluir.</p>
+        </div>
+      </div>
+      <div className="checklist">
+        {checklist.map(item => (
+          <label className="checklist-item" key={item.id}>
+            <input
+              type="checkbox"
+              checked={!!checked[item.id]}
+              onChange={e => setChecked(c => ({...c, [item.id]: e.target.checked}))}
+            />
+            <span>{item.label}</span>
+          </label>
+        ))}
+      </div>
+
+      {(submitted || allChecked) && (
+        <div className="congrats-box pop-in">
+          <div style={{fontSize:40, marginBottom:12}}>🎉</div>
+          <h3>Parabéns, Raquel! Curso concluído!</h3>
+          <p style={{marginTop:8}}>
+            Terminaste o Prompting 101 com distinção. Agora tens as ferramentas para comunicar com qualquer LLM de forma clara, eficaz e criativa. O Professor Pedro está orgulhoso — mas o mais importante é que <strong>tu</strong> te sintas capaz de explorar, experimentar e continuar a aprender. Boa sorte! 🤓
+          </p>
+          <button className="next-chapter-btn" style={{marginTop:20, background:'oklch(50% 0.22 0)'}} onClick={() => { onComplete && onComplete(); }}>
+            🌹 Ver créditos extra →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExamView({ onFinish, onProject, onExamComplete }) {
+  const [qIdx, setQIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [scores, setScores] = useState([]);
+  const [done, setDone] = useState(false);
+
+  function handleAnswer(i) {
+    setSelected(i);
+    setAnswered(true);
+  }
+
+  function handleNext() {
+    const correct = selected === EXAM_QUESTIONS[qIdx].correct;
+    const newScores = [...scores, {q: qIdx, correct, selected}];
+    setScores(newScores);
+    if (qIdx + 1 >= EXAM_QUESTIONS.length) {
+      setDone(true);
+      onExamComplete && onExamComplete();
+    } else {
+      setQIdx(q => q + 1);
+      setSelected(null);
+      setAnswered(false);
+    }
+  }
+
+  if (done) {
+    const total = EXAM_QUESTIONS.length;
+    const right = scores.filter(s => s.correct).length;
+    const pct = Math.round((right / total) * 100);
+
+    // Per chapter breakdown (rough)
+    const byChapter = {};
+    EXAM_QUESTIONS.forEach((q, i) => {
+      if (!byChapter[q.chapter]) byChapter[q.chapter] = {total:0, correct:0};
+      byChapter[q.chapter].total++;
+      if (scores[i]?.correct) byChapter[q.chapter].correct++;
+    });
+
+    return (
+      <div className="exam-result-view fade-up">
+        <div className="exam-score-circle">
+          <div className="exam-score-num">{right}</div>
+          <div className="exam-score-denom">de {total}</div>
+        </div>
+        <h2 className="exam-result-title">{getExamTitle(pct)}</h2>
+        <p className="exam-result-desc">
+          Obtiveste <strong>{pct}%</strong> no exame final. {pct >= 70 ? 'Demonstras um bom domínio dos conceitos de prompting — continua a praticar!' : 'Revê os capítulos em que tiveste mais dificuldades e tenta novamente.'}
+        </p>
+
+        <div className="chapter-breakdown">
+          {Object.entries(byChapter).map(([ch, data]) => {
+            const p = Math.round((data.correct / data.total) * 100);
+            const color = p >= 67 ? 'var(--green)' : p >= 34 ? 'var(--amber)' : 'var(--red)';
+            return (
+              <div className="breakdown-row" key={ch}>
+                <div className="breakdown-name">{ch}</div>
+                <div className="breakdown-bar-wrap">
+                  <div className="breakdown-bar" style={{width: p+'%', background: color}} />
+                </div>
+                <div className="breakdown-score">{data.correct}/{data.total}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap'}}>
+          <button className="btn btn-secondary" onClick={() => { setQIdx(0); setSelected(null); setAnswered(false); setScores([]); setDone(false); }}>
+            Repetir Exame
+          </button>
+          <button className="next-chapter-btn" onClick={onFinish}>
+            Voltar ao Início
+          </button>
+          <button className="next-chapter-btn" style={{background:'oklch(38% 0.18 295)'}} onClick={onProject}>
+            🏆 Projeto Final →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const q = EXAM_QUESTIONS[qIdx];
+  return (
+    <div className="exam-view fade-up">
+      <div className="exam-header-section">
+        <h2>🎓 Exame Final</h2>
+        <p>Avaliação abrangente de todos os capítulos</p>
+        <div className="exam-stats">
+          <div className="exam-stat">
+            <div className="exam-stat-num">{qIdx + 1}/{EXAM_QUESTIONS.length}</div>
+            <div className="exam-stat-label">Questão</div>
+          </div>
+          <div className="exam-stat">
+            <div className="exam-stat-num">{scores.filter(s=>s.correct).length}</div>
+            <div className="exam-stat-label">Corretas</div>
+          </div>
+          <div className="exam-stat">
+            <div className="exam-stat-num">{Math.round((qIdx/EXAM_QUESTIONS.length)*100)}%</div>
+            <div className="exam-stat-label">Progresso</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="quiz-section">
+        <QuizQuestion
+          question={q}
+          qIndex={qIdx}
+          total={EXAM_QUESTIONS.length}
+          onAnswer={handleAnswer}
+          answered={answered}
+          selected={selected}
+        />
+        {answered && (
+          <div className={`feedback-box pop-in ${selected === q.correct ? 'correct' : 'wrong'}`}>
+            <strong>{selected === q.correct ? '✓ Correto!' : '✗ Não exatamente.'}</strong>
+            {q.explanation}
+          </div>
+        )}
+        <div className="quiz-actions">
+          {answered && (
+            <button className="btn btn-primary" onClick={handleNext}>
+              {qIdx + 1 >= EXAM_QUESTIONS.length ? 'Ver resultado final' : 'Próxima →'}
+            </button>
+          )}
+          {!answered && (
+            <button className="btn btn-primary" disabled={selected === null}>
+              Confirmar
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeView({ onStart, onChapter, completedChapters }) {
+  return (
+    <div className="home-view fade-up">
+      <div className="home-eyebrow">Curso interativo · 8 capítulos</div>
+      <h1 className="home-title">Prompting<br/><span>101</span></h1>
+      <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:16}}>
+        <div style={{fontSize:32}}>🤓</div>
+        <div>
+          <div style={{fontSize:13, fontWeight:700, color:'oklch(42% 0.16 295)'}}>Professor Pedro dá as boas-vindas, Raquel!</div>
+          <div style={{fontSize:13, color:'var(--text-muted)', fontWeight:500}}>Este curso foi preparado especialmente para ti.</div>
+        </div>
+      </div>
+      <p className="home-desc">
+        Aprende a comunicar eficazmente com LLMs — desde os conceitos base até técnicas avançadas. Cada capítulo termina com um quiz. No final, um exame abrangente.
+      </p>
+
+      <div className="chapters-grid">
+        {CHAPTERS.map(ch => (
+          <div className="chapter-card" key={ch.id} onClick={() => onChapter(ch.id)}>
+            <div className="chapter-card-icon">{ch.icon}</div>
+            <div className="chapter-card-num">Capítulo {ch.id}</div>
+            <div className="chapter-card-title">{ch.title}</div>
+            {completedChapters.has(ch.id) && <div style={{marginTop:8, fontSize:12, color:'var(--green)', fontWeight:700}}>✓ Concluído</div>}
+          </div>
+        ))}
+      </div>
+
+      <button className="start-btn" onClick={onStart}>
+        {completedChapters.size > 0 ? 'Continuar →' : 'Começar →'}
+      </button>
+    </div>
+  );
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+
+function App() {
+  const [view, setView] = useState('home');
+  const [currentChapter, setCurrentChapter] = useState(1);
+  const [completedChapters, setCompletedChapters] = useState(new Set());
+  const [examCompleted, setExamCompleted] = useState(false);
+  const [projectCompleted, setProjectCompleted] = useState(false);
+
+  // Load progress
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('p101_completed');
+      if (saved) setCompletedChapters(new Set(JSON.parse(saved)));
+      if (localStorage.getItem('p101_exam')) setExamCompleted(true);
+      if (localStorage.getItem('p101_project')) setProjectCompleted(true);
+    } catch(e) {}
+  }, []);
+
+  function saveCompleted(set) {
+    try { localStorage.setItem('p101_completed', JSON.stringify([...set])); } catch(e) {}
+  }
+
+  function handleExamComplete() {
+    setExamCompleted(true);
+    try { localStorage.setItem('p101_exam', '1'); } catch(e) {}
+  }
+
+  function handleProjectComplete() {
+    setProjectCompleted(true);
+    try { localStorage.setItem('p101_project', '1'); } catch(e) {}
+    setView('extraCredits');
+    document.querySelector('.main')?.scrollTo(0,0);
+  }
+
+  function handleQuizComplete(chapterId, score) {
+    const next = new Set(completedChapters);
+    next.add(chapterId);
+    setCompletedChapters(next);
+    saveCompleted(next);
+
+    const nextId = chapterId + 1;
+    if (nextId <= CHAPTERS.length) {
+      setCurrentChapter(nextId);
+      setView('chapter');
+      document.querySelector('.main')?.scrollTo(0, 0);
+    } else {
+      setView('exam');
+      document.querySelector('.main')?.scrollTo(0, 0);
+    }
+  }
+
+  function goToChapter(id) {
+    setCurrentChapter(id);
+    setView('chapter');
+    document.querySelector('.main')?.scrollTo(0, 0);
+  }
+
+  const ch8Done = completedChapters.has(8);
+  const examLocked = !ch8Done;
+  const projectLocked = !examCompleted;
+  const extraLocked = !projectCompleted;
+
+  const progressPct = Math.round((completedChapters.size / CHAPTERS.length) * 100);
+
+  return (
+    <>
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+        <div className="sidebar-logo" style={{cursor:'pointer'}} onClick={() => setView('home')}>
+          <h1>Prompting 101</h1>
+          <p>Guia de introdução aos LLMs</p>
+        </div>
+
+        <nav className="sidebar-nav">
+          <div className="nav-label">Capítulos</div>
+          {CHAPTERS.map(ch => {
+            const done = completedChapters.has(ch.id);
+            const active = view === 'chapter' && currentChapter === ch.id;
+            return (
+              <div
+                key={ch.id}
+                className={`nav-item ${active ? 'active' : ''} ${done ? 'done' : ''}`}
+                onClick={() => goToChapter(ch.id)}
+              >
+                <span className="nav-dot">{done ? '✓' : ch.id}</span>
+                <span className="nav-title">{ch.title}</span>
+              </div>
+            );
+          })}
+
+          <div className="nav-label" style={{marginTop:16}}>Avaliação</div>
+          <div
+            className={`nav-item exam ${view === 'exam' ? 'active' : ''} ${examLocked ? 'locked' : ''}`}
+            onClick={() => { if (!examLocked) { setView('exam'); document.querySelector('.main')?.scrollTo(0,0); } }}
+            style={{opacity: examLocked ? 0.45 : 1, cursor: examLocked ? 'not-allowed' : 'pointer'}}
+            title={examLocked ? 'Conclui o capítulo 8 primeiro' : ''}
+          >
+            <span className="nav-dot">{examLocked ? '🔒' : '★'}</span>
+            <span className="nav-title">Exame Final{examLocked ? <span style={{fontSize:10, color:'var(--text-muted)', display:'block', fontWeight:500}}>Requer Cap. 8</span> : ''}</span>
+          </div>
+          <div
+            className={`nav-item exam ${view === 'project' ? 'active' : ''}`}
+            style={{opacity: projectLocked ? 0.45 : 1, cursor: projectLocked ? 'not-allowed' : 'pointer', '--accent': 'oklch(38% 0.18 295)'}}
+            onClick={() => { if (!projectLocked) { setView('project'); document.querySelector('.main')?.scrollTo(0,0); } }}
+            title={projectLocked ? 'Conclui o exame final primeiro' : ''}
+          >
+            <span className="nav-dot" style={{background: view === 'project' ? 'oklch(38% 0.18 295)' : undefined}}>{projectLocked ? '🔒' : '★'}</span>
+            <span className="nav-title">Projeto Final{projectLocked ? <span style={{fontSize:10, color:'var(--text-muted)', display:'block', fontWeight:500}}>Requer Exame</span> : ''}</span>
+          </div>
+          <div
+            className={`nav-item exam ${view === 'extraCredits' ? 'active' : ''}`}
+            style={{opacity: extraLocked ? 0.45 : 1, cursor: extraLocked ? 'not-allowed' : 'pointer', '--accent': 'oklch(45% 0.22 0)'}}
+            onClick={() => { if (!extraLocked) { setView('extraCredits'); document.querySelector('.main')?.scrollTo(0,0); } }}
+            title={extraLocked ? 'Conclui o projeto final primeiro' : ''}
+          >
+            <span className="nav-dot" style={{background: view === 'extraCredits' ? 'oklch(45% 0.22 0)' : undefined}}>{extraLocked ? '🔒' : '🌹'}</span>
+            <span className="nav-title">Créditos Extra{extraLocked ? <span style={{fontSize:10, color:'var(--text-muted)', display:'block', fontWeight:500}}>Requer Projeto</span> : ''}</span>
+          </div>
+        </nav>
+
+        <div className="progress-bar-wrap">
+          <div className="progress-bar-label">
+            <span>Progresso</span>
+            <span>{completedChapters.size}/{CHAPTERS.length}</span>
+          </div>
+          <div className="progress-bar">
+            <div className="progress-fill" style={{width: progressPct + '%'}} />
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <main className="main">
+        {view === 'home' && (
+          <HomeView
+            onStart={() => goToChapter(1)}
+            onChapter={goToChapter}
+            completedChapters={completedChapters}
+          />
+        )}
+        {view === 'chapter' && (
+          <ChapterView
+            key={currentChapter}
+            chapter={CHAPTERS[currentChapter - 1]}
+            quizDone={completedChapters.has(currentChapter)}
+            onQuizComplete={(score) => handleQuizComplete(currentChapter, score)}
+          />
+        )}
+        {view === 'exam' && (
+          <ExamView
+            onFinish={() => setView('home')}
+            onProject={() => { setView('project'); document.querySelector('.main')?.scrollTo(0,0); }}
+            onExamComplete={handleExamComplete}
+          />
+        )}
+        {view === 'project' && (
+          <FinalProjectView onComplete={handleProjectComplete} />
+        )}
+        {view === 'extraCredits' && (
+          <ExtraCreditsView />
+        )}
+      </main>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
